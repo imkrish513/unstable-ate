@@ -75,6 +75,7 @@ TEST_CASE("Example: Print Prompt Ledger", "[ex-3]") {
   REQUIRE(CompareFiles("./ex-1.txt", "./prompt.txt"));
 }
 
+// Critical Error 1: RegisterAccount - Missing check for existing account (Adversarial)
 TEST_CASE("RegisterAccount: Attempt to re-register and overwrite existing account", "[RegisterAccount][bug-1]") {
   Atm atm;
   unsigned int card = 11112222;
@@ -94,31 +95,58 @@ TEST_CASE("RegisterAccount: Attempt to re-register and overwrite existing accoun
   }
 }
 
-TEST_CASE("WithdrawCash: Withdraw -0.0 to bypass negative check", "[WithdrawCash][bug-2]") {
+// Critical Error 2: WithdrawCash - Comprehensive Mandatory Checks AND Boundary condition check (Adversarial)
+TEST_CASE("WithdrawCash: Comprehensive mandatory checks and adversarial -0.0 test", "[WithdrawCash][bug-2]") {
   Atm atm;
   unsigned int card = 22223333;
   unsigned int pin = 4444;
   double initial_balance = 100.00;
   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Boundary Bob", initial_balance));
 
+  // Mandatory check 1: Non-existent account
+  SECTION("Withdraw from non-existent account") {
+    REQUIRE_THROWS_AS(atm.WithdrawCash(99999999, 1111, 10.00), std::invalid_argument);
+  }
+
+  // Mandatory check 2: Negative amount
+  SECTION("Withdraw negative amount") {
+    REQUIRE_THROWS_AS(atm.WithdrawCash(card, pin, -10.00), std::invalid_argument);
+  }
+  
+  // Mandatory check 3: Insufficient funds
+  SECTION("Withdraw amount greater than balance") {
+    REQUIRE_THROWS_AS(atm.WithdrawCash(card, pin, 1000.00), std::runtime_error);
+  }
+
+  // Adversarial Check: Negative zero (The critical bug)
   double negative_zero = -0.0;
-
-  SECTION("Withdraw -0.0") {
+  SECTION("Withdraw -0.0 to bypass negative check") {
     REQUIRE_THROWS_AS(atm.WithdrawCash(card, pin, negative_zero), std::invalid_argument);
-
     REQUIRE(atm.CheckBalance(card, pin) == initial_balance);
   }
 }
 
-TEST_CASE("DepositCash: Deposit an enormous amount to cause floating-point overflow", "[DepositCash][bug-3]") {
+// Critical Error 3: DepositCash - Comprehensive Mandatory Checks AND Adversarial Overflow Attack
+TEST_CASE("DepositCash: Comprehensive checks and overflow attack", "[DepositCash][bug-3]") {
   Atm atm;
   unsigned int card = 33334444;
   unsigned int pin = 5555;
-  REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Max Deposit Mary", 1.00));
+  REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Comprehensive Cathy", 1.00));
+  
+  // Mandatory check 1: Non-existent account
+  SECTION("Deposit to non-existent account") {
+    REQUIRE_THROWS_AS(atm.DepositCash(99999999, 1111, 10.00), std::invalid_argument);
+  }
 
+  // Mandatory check 2: Negative amount
+  SECTION("Deposit negative amount") {
+    REQUIRE_THROWS_AS(atm.DepositCash(card, pin, -10.00), std::invalid_argument);
+  }
+
+  // Adversarial Check: Floating-point overflow (The critical bug)
   double enormous_deposit = std::numeric_limits<double>::max() / 2.0;
 
-  SECTION("Deposit half the maximum double value") {
+  SECTION("Deposit half the maximum double value to cause overflow") {
     REQUIRE_NOTHROW(atm.DepositCash(card, pin, enormous_deposit));
     
     double final_balance = atm.CheckBalance(card, pin);
@@ -127,7 +155,8 @@ TEST_CASE("DepositCash: Deposit an enormous amount to cause floating-point overf
   }
 }
 
-TEST_CASE("PrintLedger: Use a malicious file path for directory traversal", "[PrintLedger][bug-4]") {
+// Critical Error 4: PrintLedger - Mandatory Check AND Directory Traversal (Adversarial)
+TEST_CASE("PrintLedger: Mandatory check for non-existent account and adversarial path traversal", "[PrintLedger][bug-4]") {
   Atm atm;
   unsigned int card = 44445555;
   unsigned int pin = 6666;
@@ -135,6 +164,12 @@ TEST_CASE("PrintLedger: Use a malicious file path for directory traversal", "[Pr
   
   atm.DepositCash(card, pin, 5.00);
 
+  // Mandatory Check: Non-existent account
+  SECTION("Print ledger for non-existent account") {
+    REQUIRE_THROWS_AS(atm.PrintLedger("./nonexistent.txt", 99999999, 1111), std::invalid_argument);
+  }
+
+  // Adversarial Check: Directory Traversal (The critical bug)
   std::string malicious_path = "../../../VULNERABLE_CONFIG_FILE_LEAK.txt"; 
 
   SECTION("Attempt to write ledger to external path") {
