@@ -75,7 +75,7 @@ TEST_CASE("Example: Print Prompt Ledger", "[ex-3]") {
   REQUIRE(CompareFiles("./ex-1.txt", "./prompt.txt"));
 }
 
-TEST_CASE("RegisterAccount: overwrite existing account", "[RegisterAccount][bug-1]") {
+TEST_CASE("RegisterAccount: Attempt to re-register and overwrite existing account", "[RegisterAccount][bug-1]") {
   Atm atm;
   unsigned int card = 11112222;
   unsigned int pin = 3333;
@@ -83,7 +83,7 @@ TEST_CASE("RegisterAccount: overwrite existing account", "[RegisterAccount][bug-
 
   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Alice Smith", initial_balance));
 
-  SECTION("Attempt to overwrite with a different owner and balance (Expected: std::invalid_argument)") {
+  SECTION("Attempt to overwrite with a different owner and balance") {
     REQUIRE_THROWS_AS(atm.RegisterAccount(card, pin, "Hacker Bob", 10000.00), std::invalid_argument);
 
     auto accounts = atm.GetAccounts();
@@ -103,15 +103,14 @@ TEST_CASE("WithdrawCash: Withdraw -0.0 to bypass negative check", "[WithdrawCash
 
   double negative_zero = -0.0;
 
-  SECTION("Withdraw -0.0 (Expected: std::invalid_argument)") {
+  SECTION("Withdraw -0.0") {
     REQUIRE_THROWS_AS(atm.WithdrawCash(card, pin, negative_zero), std::invalid_argument);
 
     REQUIRE(atm.CheckBalance(card, pin) == initial_balance);
   }
 }
 
-
-TEST_CASE("DepositCash: Deposit an big amount to cause overflow", "[DepositCash][bug-3]") {
+TEST_CASE("DepositCash: Deposit an enormous amount to cause floating-point overflow", "[DepositCash][bug-3]") {
   Atm atm;
   unsigned int card = 33334444;
   unsigned int pin = 5555;
@@ -119,7 +118,7 @@ TEST_CASE("DepositCash: Deposit an big amount to cause overflow", "[DepositCash]
 
   double enormous_deposit = std::numeric_limits<double>::max() / 2.0;
 
-  SECTION("Deposit half the maximum double value (Check for overflow to Inf)") {
+  SECTION("Deposit half the maximum double value") {
     REQUIRE_NOTHROW(atm.DepositCash(card, pin, enormous_deposit));
     
     double final_balance = atm.CheckBalance(card, pin);
@@ -128,17 +127,17 @@ TEST_CASE("DepositCash: Deposit an big amount to cause overflow", "[DepositCash]
   }
 }
 
-TEST_CASE("PrintLedger: Bad file path", "[PrintLedger][bug-4]") {
+TEST_CASE("PrintLedger: Use a malicious file path for directory traversal", "[PrintLedger][bug-4]") {
   Atm atm;
-  unsigned int card = 33334444;
-  unsigned int pin = 1234;
+  unsigned int card = 44445555;
+  unsigned int pin = 6666;
   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Path Traversal Patty", 10.00));
   
   atm.DepositCash(card, pin, 5.00);
 
   std::string malicious_path = "../../../VULNERABLE_CONFIG_FILE_LEAK.txt"; 
 
-  SECTION("Attempt to write ledger to external path (Expected: failure/sanitization)") {
+  SECTION("Attempt to write ledger to external path") {
     REQUIRE_NOTHROW(atm.PrintLedger(malicious_path, card, pin));
     
     std::ifstream malicious_file(malicious_path);
@@ -147,4 +146,3 @@ TEST_CASE("PrintLedger: Bad file path", "[PrintLedger][bug-4]") {
     remove(malicious_path.c_str());
   }
 }
-//test
