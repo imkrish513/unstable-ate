@@ -94,21 +94,21 @@ TEST_CASE("RegisterAccount: overwrite existing account", "[RegisterAccount][bug-
   }
 }
 
-// TEST_CASE("WithdrawCash: Withdraw -0.0 to bypass negative check", "[WithdrawCash][bug-2]") {
-//   Atm atm;
-//   unsigned int card = 22223333;
-//   unsigned int pin = 4444;
-//   double initial_balance = 100.00;
-//   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Boundary Bob", initial_balance));
+TEST_CASE("WithdrawCash: Withdraw -0.0 to bypass negative check", "[WithdrawCash][bug-2]") {
+  Atm atm;
+  unsigned int card = 22223333;
+  unsigned int pin = 4444;
+  double initial_balance = 100.00;
+  REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Boundary Bob", initial_balance));
 
-//   double negative_zero = -0.0;
+  double negative_zero = -0.0;
 
-//   SECTION("Withdraw -0.0 (Expected: std::invalid_argument)") {
-//     REQUIRE_THROWS_AS(atm.WithdrawCash(card, pin, negative_zero), std::invalid_argument);
+  SECTION("Withdraw -0.0 (Expected: std::invalid_argument)") {
+    REQUIRE_THROWS_AS(atm.WithdrawCash(card, pin, negative_zero), std::invalid_argument);
 
-//     REQUIRE(atm.CheckBalance(card, pin) == initial_balance);
-//   }
-// }
+    REQUIRE(atm.CheckBalance(card, pin) == initial_balance);
+  }
+}
 
 // TEST_CASE("DepositCash: Deposit an enormous amount to cause overflow", "[DepositCash][bug-3]") {
 //   Atm atm;
