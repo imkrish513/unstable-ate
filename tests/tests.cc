@@ -130,8 +130,8 @@ TEST_CASE("DepositCash: Deposit an big amount to cause overflow", "[DepositCash]
 
 TEST_CASE("PrintLedger: Bad file path", "[PrintLedger][bug-4]") {
   Atm atm;
-  unsigned int card = 44445555;
-  unsigned int pin = 6666;
+  unsigned int card = 33334444;
+  unsigned int pin = 1234;
   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Path Traversal Patty", 10.00));
   
   atm.DepositCash(card, pin, 5.00);
