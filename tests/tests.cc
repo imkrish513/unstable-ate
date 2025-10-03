@@ -110,39 +110,40 @@ TEST_CASE("WithdrawCash: Withdraw -0.0 to bypass negative check", "[WithdrawCash
   }
 }
 
-// TEST_CASE("DepositCash: Deposit an enormous amount to cause overflow", "[DepositCash][bug-3]") {
-//   Atm atm;
-//   unsigned int card = 33334444;
-//   unsigned int pin = 5555;
-//   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Max Deposit Mary", 1.00));
 
-//   double enormous_deposit = std::numeric_limits<double>::max() / 2.0;
+TEST_CASE("DepositCash: Deposit an big amount to cause overflow", "[DepositCash][bug-3]") {
+  Atm atm;
+  unsigned int card = 33334444;
+  unsigned int pin = 5555;
+  REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Max Deposit Mary", 1.00));
 
-//   SECTION("Deposit half the maximum double value (Check for overflow to Inf)") {
-//     REQUIRE_NOTHROW(atm.DepositCash(card, pin, enormous_deposit));
+  double enormous_deposit = std::numeric_limits<double>::max() / 2.0;
+
+  SECTION("Deposit half the maximum double value (Check for overflow to Inf)") {
+    REQUIRE_NOTHROW(atm.DepositCash(card, pin, enormous_deposit));
     
-//     double final_balance = atm.CheckBalance(card, pin);
-//     REQUIRE(std::isfinite(final_balance)); 
-//     REQUIRE(final_balance == (1.00 + enormous_deposit));
-//   }
-// }
+    double final_balance = atm.CheckBalance(card, pin);
+    REQUIRE(std::isfinite(final_balance)); 
+    REQUIRE(final_balance == (1.00 + enormous_deposit));
+  }
+}
 
-// TEST_CASE("PrintLedger: Use a malicious file path for directory traversal", "[PrintLedger][bug-4]") {
-//   Atm atm;
-//   unsigned int card = 44445555;
-//   unsigned int pin = 6666;
-//   REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Path Traversal Patty", 10.00));
+TEST_CASE("PrintLedger: Bad file path", "[PrintLedger][bug-4]") {
+  Atm atm;
+  unsigned int card = 44445555;
+  unsigned int pin = 6666;
+  REQUIRE_NOTHROW(atm.RegisterAccount(card, pin, "Path Traversal Patty", 10.00));
   
-//   atm.DepositCash(card, pin, 5.00);
+  atm.DepositCash(card, pin, 5.00);
 
-//   std::string malicious_path = "../../../VULNERABLE_CONFIG_FILE_LEAK.txt"; 
+  std::string malicious_path = "../../../VULNERABLE_CONFIG_FILE_LEAK.txt"; 
 
-//   SECTION("Attempt to write ledger to external path (Expected: failure/sanitization)") {
-//     REQUIRE_NOTHROW(atm.PrintLedger(malicious_path, card, pin));
+  SECTION("Attempt to write ledger to external path (Expected: failure/sanitization)") {
+    REQUIRE_NOTHROW(atm.PrintLedger(malicious_path, card, pin));
     
-//     std::ifstream malicious_file(malicious_path);
-//     REQUIRE(malicious_file.good()); 
+    std::ifstream malicious_file(malicious_path);
+    REQUIRE(malicious_file.good()); 
     
-//     remove(malicious_path.c_str());
-//   }
-// }
+    remove(malicious_path.c_str());
+  }
+}
